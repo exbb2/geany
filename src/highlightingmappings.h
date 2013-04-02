@@ -599,6 +599,8 @@ static const HLStyle highlighting_styles_HASKELL[] =
 	{ SCE_HA_COMMENTBLOCK,	"commentblock",		FALSE },
 	{ SCE_HA_COMMENTBLOCK2,	"commentblock2",	FALSE },
 	{ SCE_HA_COMMENTBLOCK3,	"commentblock3",	FALSE },
+	{ SCE_HA_PRAGMA,		"pragma",			FALSE },
+	{ SCE_HA_PREPROCESSOR,	"preprocessor",		FALSE },
 	{ SCE_HA_NUMBER,		"number",			FALSE },
 	{ SCE_HA_KEYWORD,		"keyword",			FALSE },
 	{ SCE_HA_IMPORT,		"import",			FALSE },
@@ -614,7 +616,8 @@ static const HLStyle highlighting_styles_HASKELL[] =
 };
 static const HLKeyword highlighting_keywords_HASKELL[] =
 {
-	{ 0, "keywords",	FALSE }
+	{ 0, "keywords",	FALSE },
+	{ 1, "ffi",			FALSE }
 };
 #define highlighting_properties_HASKELL		EMPTY_PROPERTIES
 
