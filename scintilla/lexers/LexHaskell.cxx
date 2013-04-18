@@ -166,7 +166,7 @@ class LexerHaskell : public ILexer {
       }
    }
 
-   inline bool LineContainsImport(const int line, Accessor &styler) {
+   bool LineContainsImport(const int line, Accessor &styler) {
       if (options.foldImports) {
          int currentPos = styler.LineStart(line);
          int style = styler.StyleAt(currentPos);
