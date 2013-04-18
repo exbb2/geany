@@ -171,7 +171,7 @@ class LexerHaskell : public ILexer {
          int currentPos = styler.LineStart(line);
          int style = styler.StyleAt(currentPos);
 
-         if (options.foldIndentedImports && firstImportLine != -1) {
+         if (options.foldIndentedImports) {
             int ch = styler.SafeGetCharAt(currentPos);
             int eol_pos = styler.LineStart(line + 1) - 1;
 
@@ -690,9 +690,9 @@ void SCI_METHOD LexerHaskell::Fold(unsigned int startPos, int length, int // ini
          firstImportLine = lineCurrent;
       }
       if (firstImportLine != lineCurrent) {
-         indentCurrentLevel = (SC_FOLDLEVELBASE & SC_FOLDLEVELNUMBERMASK) + 1;
-         indentCurrent = indentCurrentLevel | indentCurrentMask;
+         indentCurrentLevel++;
       }
+      indentCurrent = indentCurrentLevel | indentCurrentMask;
    }
 
    // Process all characters to end of requested range
@@ -737,9 +737,9 @@ void SCI_METHOD LexerHaskell::Fold(unsigned int startPos, int length, int // ini
             firstImportLine = lineNext;
          }
          if (firstImportLine != lineNext) {
-            indentNextLevel = (SC_FOLDLEVELBASE & SC_FOLDLEVELNUMBERMASK) + 1;
-            indentNext = indentNextLevel | indentNextMask;
+            indentNextLevel++;
          }
+         indentNext = indentNextLevel | indentNextMask;
       }
 
       const int levelBeforeComments = Maximum(indentCurrentLevel,indentNextLevel);
