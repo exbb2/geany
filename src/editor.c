@@ -1368,49 +1368,37 @@ static gint get_python_indent(ScintillaObject *sci, gint line)
 static gint get_haskell_indent(ScintillaObject *sci, const gint line)
 {
 	const gint last_char_pos = get_sci_line_code_end_position(sci, line);
+	const gint style = sci_get_style_at(sci, last_char_pos);
 
-	if (sci_get_style_at(sci, last_char_pos) == SCE_HA_KEYWORD)
-	{
-		gint start = last_char_pos;
-		gsize len = 1;
-	
-		while (sci_get_style_at(sci, start - 1) == SCE_HA_KEYWORD)
-		{
-			start--;
-			len++;
-		}
-	
-		gchar *buf;
-	
-		buf = g_alloca(len + 1);
-	
-		sci_get_text_range(sci, start, last_char_pos + 1, buf);
-	
-		return strcmp("do", buf) == 0
-			|| strcmp("of", buf) == 0
-			|| strcmp("let", buf) == 0
-			|| strcmp("where", buf) == 0;
-	} else if (sci_get_style_at(sci, last_char_pos) == SCE_HA_OPERATOR) {
-		gint start = last_char_pos;
-		gsize len = 1;
-	
-		while (sci_get_style_at(sci, start - 1) == SCE_HA_OPERATOR)
-		{
-			start--;
-			len++;
-		}
-	
-		gchar *buf;
-	
-		buf = g_alloca(len + 1);
-	
-		sci_get_text_range(sci, start, last_char_pos + 1, buf);
-	
-		return strcmp("=", buf) == 0
-			|| strcmp("->", buf) == 0;
-	} else
-	{
+	if (style != SCE_HA_KEYWORD && style != SCE_HA_OPERATOR)
 		return 0;
+
+	gint start = last_char_pos;
+	gsize len = 1;
+
+	while (sci_get_style_at(sci, start - 1) == style)
+	{
+		start--;
+		len++;
+	}
+
+	gchar *buf;
+
+	buf = g_alloca(len + 1);
+
+	sci_get_text_range(sci, start, last_char_pos + 1, buf);
+
+	switch (style)
+	{
+		case SCE_HA_KEYWORD:
+			return strcmp("do", buf) == 0
+				|| strcmp("of", buf) == 0
+				|| strcmp("let", buf) == 0
+				|| strcmp("where", buf) == 0;
+		case SCE_HA_OPERATOR:
+			return strcmp("=", buf) == 0;
+		default:
+			return 0;
 	}
 }
 
