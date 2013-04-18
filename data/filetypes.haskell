@@ -6,6 +6,8 @@ commentline=comment_line
 commentblock=comment
 commentblock2=comment
 commentblock3=comment
+pragma=preprocessor
+preprocessor=preprocessor
 number=number_1
 keyword=keyword_1
 import=preprocessor
@@ -21,8 +23,12 @@ data=number_2
 
 [keywords]
 # all items must be in one line
-keywords=as case class data deriving do else if import in infixl infixr instance let module of primitive qualified then type where
+keywords=module import type data newtype deriving instance infix infixl infixr default foreign let in case of where do if then else
+ffi=import export ccall stdcall capi prim safe unsafe
 
+[lexer_properties]
+lexer.haskell.allow.hash=1
+styling.within.preprocessor=1
 
 [settings]
 # default extension used when saving files
