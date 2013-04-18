@@ -75,6 +75,14 @@ static inline bool IsAnOperatorChar(const int ch) {
       || ch == '^' || ch == '|' || ch == '~' || ch == '\\');
 }
 
+static inline bool IsCommentBlockStyle(int style) {
+   return (style >= SCE_HA_COMMENTBLOCK && style <= SCE_HA_COMMENTBLOCK3);
+}
+
+static inline bool IsCommentStyle(int style) {
+   return (style >= SCE_HA_COMMENTLINE && style <= SCE_HA_COMMENTBLOCK3);
+}
+
 struct OptionsHaskell {
    bool magicHash;
    bool allowQuotes;
@@ -84,6 +92,7 @@ struct OptionsHaskell {
    bool foldComment;
    bool foldCompact;
    bool foldImports;
+   bool foldIndentedImports;
    OptionsHaskell() {
       magicHash = true;
       allowQuotes = true;
@@ -93,6 +102,7 @@ struct OptionsHaskell {
       foldComment = false;
       foldCompact = false;
       foldImports = false;
+      foldIndentedImports = true;
    }
 };
 
@@ -132,6 +142,10 @@ struct OptionSetHaskell : public OptionSet<OptionsHaskell> {
       DefineProperty("fold.haskell.imports", &OptionsHaskell::foldImports,
          "Set to 1 to enable folding of import declarations");
 
+      DefineProperty("fold.haskell.imports.indented", &OptionsHaskell::foldIndentedImports,
+         "Set this property to 0 to disable folding imports not starting at "
+         "column 0 when fold.haskell.imports=1");
+
       DefineWordListSets(haskellWordListDesc);
    }
 };
@@ -152,9 +166,30 @@ class LexerHaskell : public ILexer {
       }
    }
 
-   inline bool LineContainsImport(int line, Accessor &styler) {
+   inline bool LineContainsImport(const int line, Accessor &styler) {
       if (options.foldImports) {
-         return styler.Match(styler.LineStart(line), "import");
+         int currentPos = styler.LineStart(line);
+         int style = styler.StyleAt(currentPos);
+
+         if (options.foldIndentedImports && firstImportLine != -1) {
+            int ch = styler.SafeGetCharAt(currentPos);
+            int eol_pos = styler.LineStart(line + 1) - 1;
+
+            while(currentPos < eol_pos) {
+               ch = styler[currentPos];
+               style = styler.StyleAt(currentPos);
+
+               if (ch == ' ' || ch == '\t'
+                || IsCommentBlockStyle(style)) {
+                  currentPos++;
+               } else {
+                  break;
+               }
+            }
+         }
+
+         return (style == SCE_HA_KEYWORD
+              && styler.Match(currentPos, "import"));
       } else {
          return false;
       }
@@ -585,10 +620,6 @@ void SCI_METHOD LexerHaskell::Lex(unsigned int startPos, int length, int initSty
    sc.Complete();
 }
 
-static inline bool IsCommentStyle(int style) {
-   return (style >= SCE_HA_COMMENTLINE && style <= SCE_HA_COMMENTBLOCK3);
-}
-
 static bool LineStartsWithACommentOrPreprocessor(int line, Accessor &styler) {
    int pos = styler.LineStart(line);
    int eol_pos = styler.LineStart(line + 1) - 1;
@@ -659,7 +690,7 @@ void SCI_METHOD LexerHaskell::Fold(unsigned int startPos, int length, int // ini
          firstImportLine = lineCurrent;
       }
       if (firstImportLine != lineCurrent) {
-         indentCurrentLevel++;
+         indentCurrentLevel = (SC_FOLDLEVELBASE & SC_FOLDLEVELNUMBERMASK) + 1;
          indentCurrent = indentCurrentLevel | indentCurrentMask;
       }
    }
@@ -706,7 +737,7 @@ void SCI_METHOD LexerHaskell::Fold(unsigned int startPos, int length, int // ini
             firstImportLine = lineNext;
          }
          if (firstImportLine != lineNext) {
-            indentNextLevel++;
+            indentNextLevel = (SC_FOLDLEVELBASE & SC_FOLDLEVELNUMBERMASK) + 1;
             indentNext = indentNextLevel | indentNextMask;
          }
       }
