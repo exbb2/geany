@@ -1365,6 +1365,56 @@ static gint get_python_indent(ScintillaObject *sci, gint line)
 }
 
 
+static gint get_haskell_indent(ScintillaObject *sci, const gint line)
+{
+	const gint last_char_pos = get_sci_line_code_end_position(sci, line);
+
+	if (sci_get_style_at(sci, last_char_pos) == SCE_HA_KEYWORD)
+	{
+		gint start = last_char_pos;
+		gsize len = 1;
+	
+		while (sci_get_style_at(sci, start - 1) == SCE_HA_KEYWORD)
+		{
+			start--;
+			len++;
+		}
+	
+		gchar *buf;
+	
+		buf = g_alloca(len + 1);
+	
+		sci_get_text_range(sci, start, last_char_pos + 1, buf);
+	
+		return strcmp("do", buf) == 0
+			|| strcmp("of", buf) == 0
+			|| strcmp("let", buf) == 0
+			|| strcmp("where", buf) == 0;
+	} else if (sci_get_style_at(sci, last_char_pos) == SCE_HA_OPERATOR) {
+		gint start = last_char_pos;
+		gsize len = 1;
+	
+		while (sci_get_style_at(sci, start - 1) == SCE_HA_OPERATOR)
+		{
+			start--;
+			len++;
+		}
+	
+		gchar *buf;
+	
+		buf = g_alloca(len + 1);
+	
+		sci_get_text_range(sci, start, last_char_pos + 1, buf);
+	
+		return strcmp("=", buf) == 0
+			|| strcmp("->", buf) == 0;
+	} else
+	{
+		return 0;
+	}
+}
+
+
 static gint get_xml_indent(ScintillaObject *sci, gint line)
 {
 	gboolean need_close = FALSE;
@@ -1421,6 +1471,8 @@ static gint get_indent_size_after_line(GeanyEditor *editor, gint line)
 			additional_indent = iprefs->width * get_brace_indent(sci, line);
 		else if (sci_get_lexer(sci) == SCLEX_PYTHON) /* Python/Cython */
 			additional_indent = iprefs->width * get_python_indent(sci, line);
+		else if (sci_get_lexer(sci) == SCLEX_HASKELL)
+			additional_indent = iprefs->width * get_haskell_indent(sci, line);
 
 		/* HTML lexer "has braces" because of PHP and JavaScript.  If get_brace_indent() did not
 		 * recommend us to insert additional indent, we are probably not in PHP/JavaScript chunk and
