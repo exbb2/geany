@@ -1730,9 +1730,17 @@ gboolean highlighting_is_code_style(gint lexer, gint style)
 	switch (lexer)
 	{
 		case SCLEX_CPP:
+		{
 			if (style == SCE_C_PREPROCESSOR)
 				return FALSE;
 			break;
+		}
+		case SCLEX_HASKELL:
+		{
+			if (style == SCE_HA_PREPROCESSOR)
+				return FALSE;
+			break;
+		}
 	}
 	return !(highlighting_is_comment_style(lexer, style) ||
 		highlighting_is_string_style(lexer, style));

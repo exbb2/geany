@@ -32,6 +32,7 @@ lexer.haskell.allow.quotes=1
 lexer.haskell.import.safe=1
 styling.within.preprocessor=1
 fold.haskell.imports=1
+fold.haskell.imports.indented=1
 
 [settings]
 # default extension used when saving files

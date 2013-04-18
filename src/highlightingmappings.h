@@ -619,7 +619,14 @@ static const HLKeyword highlighting_keywords_HASKELL[] =
 	{ 0, "keywords",	FALSE },
 	{ 1, "ffi",			FALSE }
 };
-#define highlighting_properties_HASKELL		EMPTY_PROPERTIES
+static const HLProperty highlighting_properties_HASKELL[] =
+{
+	{ "lexer.haskell.allow.hash",      "1" },
+	{ "lexer.haskell.allow.quotes",    "1" },
+	{ "lexer.haskell.import.safe",     "1" },
+	{ "fold.haskell.imports",          "1" },
+	{ "fold.haskell.imports.indented", "1" }
+};
 
 
 /* HAXE */
