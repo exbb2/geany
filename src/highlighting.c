@@ -1508,7 +1508,8 @@ gboolean highlighting_is_string_style(gint lexer, gint style)
 
 		case SCLEX_HASKELL:
 			return (style == SCE_HA_CHARACTER ||
-				style == SCE_HA_STRING);
+				style == SCE_HA_STRING ||
+				style == SCE_HA_STRINGEOL);
 
 		case SCLEX_FREEBASIC:
 			return (style == SCE_B_STRING ||
@@ -1730,9 +1731,17 @@ gboolean highlighting_is_code_style(gint lexer, gint style)
 	switch (lexer)
 	{
 		case SCLEX_CPP:
+		{
 			if (style == SCE_C_PREPROCESSOR)
 				return FALSE;
 			break;
+		}
+		case SCLEX_HASKELL:
+		{
+			if (style == SCE_HA_PREPROCESSOR)
+				return FALSE;
+			break;
+		}
 	}
 	return !(highlighting_is_comment_style(lexer, style) ||
 		highlighting_is_string_style(lexer, style));
