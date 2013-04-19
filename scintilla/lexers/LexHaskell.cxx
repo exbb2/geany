@@ -10,7 +10,7 @@
  *
  *    Several bug fixes by Krasimir Angelov - kr.angelov at gmail.com
  *
- *    Improvements by kudah <kudahkukarek@gmail.com>
+ *    Improved by kudah <kudahkukarek@gmail.com>
  *
  *    TODO:
  *    * A proper lexical folder to fold group declarations, comments, pragmas,
