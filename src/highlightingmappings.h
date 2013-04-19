@@ -613,6 +613,7 @@ static const HLStyle highlighting_styles_HASKELL[] =
 	{ SCE_HA_CAPITAL,		"capital",			FALSE },
 	{ SCE_HA_MODULE,		"module",			FALSE },
 	{ SCE_HA_DATA,			"data",				FALSE }
+	{ SCE_HA_STRINGEOL,     "stringeol",        FALSE }
 };
 static const HLKeyword highlighting_keywords_HASKELL[] =
 {

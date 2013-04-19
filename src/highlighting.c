@@ -1508,7 +1508,8 @@ gboolean highlighting_is_string_style(gint lexer, gint style)
 
 		case SCLEX_HASKELL:
 			return (style == SCE_HA_CHARACTER ||
-				style == SCE_HA_STRING);
+				style == SCE_HA_STRING ||
+				style == SCE_HA_STRINGEOL);
 
 		case SCLEX_FREEBASIC:
 			return (style == SCE_B_STRING ||
