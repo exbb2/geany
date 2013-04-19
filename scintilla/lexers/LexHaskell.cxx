@@ -444,7 +444,7 @@ void SCI_METHOD LexerHaskell::Lex(unsigned int startPos, int length, int initSty
 
          if (keywords.InList(s)) {
             style = SCE_HA_KEYWORD;
-         } else if (IsUpperCase(s[0])) {
+         } else if (style == SCE_HA_CAPITAL) {
             if (mode == HA_MODE_IMPORT1 || mode == HA_MODE_IMPORT3) {
                style    = SCE_HA_MODULE;
                new_mode = HA_MODE_IMPORT2;
