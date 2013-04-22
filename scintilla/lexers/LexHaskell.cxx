@@ -56,30 +56,30 @@ using namespace Scintilla;
 
 #define INDENT_OFFSET       1
 
-int u_iswalpha(int);
-int u_iswalnum(int);
-int u_iswupper(int);
-int u_IsHaskellSymbol(int);
+static int u_iswalpha(int);
+static int u_iswalnum(int);
+static int u_iswupper(int);
+static int u_IsHaskellSymbol(int);
 
-// #define HASKELL_UNICODE
+#define HASKELL_UNICODE
 
 #ifndef HASKELL_UNICODE
 
 // Stubs
 
-int u_iswalpha(int ch) {
+static int u_iswalpha(int) {
    return 0;
 }
 
-int u_iswalnum(int ch) {
+static int u_iswalnum(int) {
    return 0;
 }
 
-int u_iswupper(int ch) {
+static int u_iswupper(int) {
    return 0;
 }
 
-int u_IsHaskellSymbol(int ch) {
+static int u_IsHaskellSymbol(int) {
    return 0;
 }
 
@@ -90,7 +90,7 @@ static inline bool IsHaskellLetter(const int ch) {
       return (ch >= 'a' && ch <= 'z')
           || (ch >= 'A' && ch <= 'Z');
    } else {
-      return u_iswalpha(ch);
+      return u_iswalpha(ch) != 0;
    }
 }
 
@@ -98,7 +98,7 @@ static inline bool IsHaskellAlphaNumeric(const int ch) {
    if (IsASCII(ch)) {
       return IsAlphaNumeric(ch);
    } else {
-      return u_iswalnum(ch);
+      return u_iswalnum(ch) != 0;
    }
 }
 
@@ -106,7 +106,7 @@ static inline bool IsHaskellUpperCase(const int ch) {
    if (IsASCII(ch)) {
       return ch >= 'A' && ch <= 'Z';
    } else {
-      return u_iswupper(ch);
+      return u_iswupper(ch) != 0;
    }
 }
 
@@ -119,7 +119,7 @@ static inline bool IsAnHaskellOperatorChar(const int ch) {
          || ch == '=' || ch == '>' || ch == '?' || ch == '@'
          || ch == '^' || ch == '|' || ch == '~' || ch == '\\');
    } else {
-      return u_IsHaskellSymbol(ch);
+      return u_IsHaskellSymbol(ch) != 0;
    }
 }
 
@@ -376,9 +376,9 @@ void SCI_METHOD LexerHaskell::Lex(unsigned int startPos, int length, int initSty
       }
 
       if (sc.atLineStart && (sc.state == SCE_HA_STRING || sc.state == SCE_HA_CHARACTER)) {
-            // Prevent SCE_HA_STRINGEOL from leaking back to previous line
-            sc.SetState(sc.state);
-        }
+         // Prevent SCE_HA_STRINGEOL from leaking back to previous line
+         sc.SetState(sc.state);
+      }
 
       // Handle line continuation generically.
       if (sc.ch == '\\' &&
@@ -603,6 +603,7 @@ void SCI_METHOD LexerHaskell::Lex(unsigned int startPos, int length, int initSty
          } else if (sc.Match('-','-')) {
             sc.SetState(SCE_HA_COMMENTLINE);
             sc.Forward(2);
+            inDashes = false;
          } else if (sc.Match('{','-')) {
             sc.SetState(StyleFromNestLevel(nestLevel));
             sc.Forward(2);
@@ -651,11 +652,7 @@ void SCI_METHOD LexerHaskell::Lex(unsigned int startPos, int length, int initSty
          else if (sc.Match('-','-')) {
             sc.SetState(SCE_HA_COMMENTLINE);
             sc.Forward(2);
-            if (mode != HA_MODE_PRAGMA) {
-               inDashes = true;
-            } else {
-               inDashes = false;
-            }
+            inDashes = true;
          }
          // Comment block
          else if (sc.Match('{','-')) {
