@@ -624,11 +624,12 @@ static const HLKeyword highlighting_keywords_HASKELL[] =
 };
 static const HLProperty highlighting_properties_HASKELL[] =
 {
-	{ "lexer.haskell.allow.hash",      "1" },
-	{ "lexer.haskell.allow.quotes",    "1" },
-	{ "lexer.haskell.import.safe",     "1" },
-	{ "fold.haskell.imports",          "1" },
-	{ "fold.haskell.imports.indented", "1" }
+	{ "lexer.haskell.allow.hash",      	  "1" },
+	{ "lexer.haskell.allow.quotes",    	  "1" },
+	{ "lexer.haskell.allow.questionmark", "0" },
+	{ "lexer.haskell.import.safe",     	  "1" },
+	{ "fold.haskell.imports",          	  "1" },
+	{ "fold.haskell.imports.indented", 	  "1" }
 };
 
 
