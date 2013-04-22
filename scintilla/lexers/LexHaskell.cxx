@@ -18,6 +18,7 @@
  *      etc.
  *
  *****************************************************************/
+#include <iostream>
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -141,7 +142,7 @@ static inline bool IsCommentStyle(int style) {
    return (style >= SCE_HA_COMMENTLINE && style <= SCE_HA_COMMENTBLOCK3);
 }
 
-inline int StyleFromNestLevel(const int nestLevel) {
+inline int StyleFromNestLevel(const unsigned int nestLevel) {
       return SCE_HA_COMMENTBLOCK + (nestLevel % 3);
    }
 
@@ -228,11 +229,21 @@ class LexerHaskell : public ILexer {
    OptionsHaskell options;
    OptionSetHaskell osHaskell;
 
-   inline void skipMagicHash(StyleContext &sc, const bool twoHashes) {
+   enum HashCount {
+       oneHash
+      ,twoHashes
+      ,unlimitedHashes
+   };
+
+   inline void skipMagicHash(StyleContext &sc, const HashCount hashes) {
       if (options.magicHash && sc.ch == '#') {
          sc.Forward();
-         if (twoHashes && sc.ch == '#') {
+         if (hashes == twoHashes && sc.ch == '#') {
             sc.Forward();
+         } else if (hashes == unlimitedHashes) {
+            while (sc.ch == '#') {
+               sc.Forward();
+            }
          }
       }
    }
@@ -366,11 +377,14 @@ void SCI_METHOD LexerHaskell::Lex(unsigned int startPos, int length, int initSty
       // Check for state end
 
       // For line numbering (and by extension, nested comments) to work,
-      // states should either only forward one character at a time, or check
-      // that characters they're skipping are not newlines. If states match on
-      // line end, they should skip it to prevent double counting.
+      // states should always forward one character at a time.
+      // If a state sometimes does _not_ forward a character, it should check
+      // first if it's not on a line end and forward otherwise.
+      // If a state forwards more than one character, it should check every time
+      // that it is not a line end and cease forwarding otherwise.
       if (sc.atLineEnd) {
          // Remember the line state for future incremental lexing
+         std::cout << lineCurrent+1 << ": Save " << nestLevel << std::endl;
          styler.SetLineState(lineCurrent, (nestLevel << 3) | mode);
          lineCurrent++;
       }
@@ -418,8 +432,8 @@ void SCI_METHOD LexerHaskell::Lex(unsigned int startPos, int length, int initSty
          if (reserved_operators.InList(s))
             style = SCE_HA_RESERVED_OPERATOR;
 
-         styler.ColourTo(sc.currentPos - 1, style);
-         sc.ChangeState(SCE_HA_DEFAULT);
+         sc.ChangeState(style);
+         sc.SetState(SCE_HA_DEFAULT);
       }
          // String
       else if (sc.state == SCE_HA_STRING) {
@@ -428,7 +442,7 @@ void SCI_METHOD LexerHaskell::Lex(unsigned int startPos, int length, int initSty
             sc.ForwardSetState(SCE_HA_DEFAULT);
          } else if (sc.ch == '\"') {
             sc.Forward();
-            skipMagicHash(sc, false);
+            skipMagicHash(sc, oneHash);
             sc.SetState(SCE_HA_DEFAULT);
          } else if (sc.ch == '\\') {
             sc.Forward(2);
@@ -443,7 +457,7 @@ void SCI_METHOD LexerHaskell::Lex(unsigned int startPos, int length, int initSty
             sc.ForwardSetState(SCE_HA_DEFAULT);
          } else if (sc.ch == '\'') {
             sc.Forward();
-            skipMagicHash(sc, false);
+            skipMagicHash(sc, oneHash);
             sc.SetState(SCE_HA_DEFAULT);
          } else if (sc.ch == '\\') {
             sc.Forward(2);
@@ -463,7 +477,7 @@ void SCI_METHOD LexerHaskell::Lex(unsigned int startPos, int length, int initSty
             if (sc.ch == '+' || sc.ch == '-')
                 sc.Forward();
          } else {
-            skipMagicHash(sc, true);
+            skipMagicHash(sc, twoHashes);
             sc.SetState(SCE_HA_DEFAULT);
          }
       }
@@ -478,9 +492,6 @@ void SCI_METHOD LexerHaskell::Lex(unsigned int startPos, int length, int initSty
          while (sc.More()) {
             if (IsAHaskellWordChar(sc.ch)) {
                sc.Forward();
-            } else if (sc.ch == '#' && options.magicHash) {
-               sc.Forward();
-               break;
             } else if (sc.ch == '.' && style == SCE_HA_CAPITAL) {
                if (IsHaskellUpperCase(sc.chNext)) {
                   sc.Forward();
@@ -501,6 +512,8 @@ void SCI_METHOD LexerHaskell::Lex(unsigned int startPos, int length, int initSty
                break;
             }
          }
+
+         skipMagicHash(sc, unlimitedHashes);
 
          char s[100];
          sc.GetCurrent(s, sizeof(s));
@@ -544,7 +557,8 @@ void SCI_METHOD LexerHaskell::Lex(unsigned int startPos, int length, int initSty
             }
          }
 
-         styler.ColourTo(sc.currentPos - 1, style);
+         sc.ChangeState(style);
+         sc.SetState(SCE_HA_DEFAULT);
 
          if (strcmp(s,"import") == 0 && mode != HA_MODE_FFI)
             new_mode = HA_MODE_IMPORT1;
@@ -556,7 +570,6 @@ void SCI_METHOD LexerHaskell::Lex(unsigned int startPos, int length, int initSty
                || strcmp(s,"data") == 0)
             new_mode = HA_MODE_TYPE;
 
-         sc.ChangeState(SCE_HA_DEFAULT);
          mode = new_mode;
       }
 
@@ -564,13 +577,16 @@ void SCI_METHOD LexerHaskell::Lex(unsigned int startPos, int length, int initSty
             // Oneliner
       else if (sc.state == SCE_HA_COMMENTLINE) {
          if (sc.atLineEnd) {
+            std::cout << lineCurrent+1 << ": end comment" << std::endl;
             sc.SetState(mode == HA_MODE_PRAGMA ? SCE_HA_PRAGMA : SCE_HA_DEFAULT);
             sc.Forward(); // prevent double counting a line
          } else if (inDashes && sc.ch != '-' && mode != HA_MODE_PRAGMA) {
+            std::cout << lineCurrent+1 << ": stop dashes" << std::endl;
             inDashes = false;
             if (IsAnHaskellOperatorChar(sc.ch))
                sc.ChangeState(SCE_HA_OPERATOR);
          } else {
+            std::cout << lineCurrent+1 << ": continue comment" << std::endl;
             sc.Forward();
          }
       }
@@ -580,8 +596,7 @@ void SCI_METHOD LexerHaskell::Lex(unsigned int startPos, int length, int initSty
             sc.SetState(StyleFromNestLevel(nestLevel));
             sc.Forward(2);
             nestLevel++;
-         } else if (sc.Match('-','}')
-                 && !(mode == HA_MODE_PRAGMA && sc.chPrev == '#')) {
+         } else if (sc.Match('-','}')) {
             sc.Forward(2);
             nestLevel--;
             assert(nestLevel >= 0);
@@ -595,8 +610,7 @@ void SCI_METHOD LexerHaskell::Lex(unsigned int startPos, int length, int initSty
       }
             // Pragma
       else if (sc.state == SCE_HA_PRAGMA) {
-         // GHC pragma end should always be indented further than it's start.
-         if (sc.Match("#-}") && !sc.atLineStart) {
+         if (sc.Match("#-}")) {
             mode = HA_MODE_DEFAULT;
             sc.Forward(3);
             sc.SetState(SCE_HA_DEFAULT);
@@ -607,7 +621,7 @@ void SCI_METHOD LexerHaskell::Lex(unsigned int startPos, int length, int initSty
          } else if (sc.Match('{','-')) {
             sc.SetState(StyleFromNestLevel(nestLevel));
             sc.Forward(2);
-            nestLevel++;
+            nestLevel = 1;
          } else {
             sc.Forward();
          }
@@ -650,6 +664,7 @@ void SCI_METHOD LexerHaskell::Lex(unsigned int startPos, int length, int initSty
          }
          // Comment line
          else if (sc.Match('-','-')) {
+            std::cout << lineCurrent+1 << ": start comment" << std::endl;
             sc.SetState(SCE_HA_COMMENTLINE);
             sc.Forward(2);
             inDashes = true;
@@ -658,7 +673,7 @@ void SCI_METHOD LexerHaskell::Lex(unsigned int startPos, int length, int initSty
          else if (sc.Match('{','-')) {
             sc.SetState(StyleFromNestLevel(nestLevel));
             sc.Forward(2);
-            nestLevel++;
+            nestLevel = 1;
          }
          // String
          else if (sc.ch == '\"') {
@@ -728,7 +743,13 @@ void SCI_METHOD LexerHaskell::Lex(unsigned int startPos, int length, int initSty
             sc.Forward();
          }
       }
+            // This branch should never be reached.
+      else {
+         assert(false);
+         sc.Forward();
+      }
    }
+   std::cout << lineCurrent+1 << ": Final save " << nestLevel << std::endl;
    styler.SetLineState(lineCurrent, (nestLevel << 3) | mode);
    sc.Complete();
 }
@@ -906,7 +927,7 @@ void SCI_METHOD LexerHaskell::Fold(unsigned int startPos, int length, int // ini
 
 LexerModule lmHaskell(SCLEX_HASKELL, LexerHaskell::LexerFactoryHaskell, "haskell", haskellWordListDesc);
 
-#ifdef HASKELL_UNICODE 
+#ifdef HASKELL_UNICODE
 
 // Unicode tables copied from https://github.com/ghc/packages-base/blob/master/cbits/WCsubst.c
 
