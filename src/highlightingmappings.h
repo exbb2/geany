@@ -594,39 +594,42 @@ static const HLKeyword highlighting_keywords_FORTH[] =
 #define highlighting_lexer_HASKELL			SCLEX_HASKELL
 static const HLStyle highlighting_styles_HASKELL[] =
 {
-	{ SCE_HA_DEFAULT,		"default",			FALSE },
-	{ SCE_HA_COMMENTLINE,	"commentline",		FALSE },
-	{ SCE_HA_COMMENTBLOCK,	"commentblock",		FALSE },
-	{ SCE_HA_COMMENTBLOCK2,	"commentblock2",	FALSE },
-	{ SCE_HA_COMMENTBLOCK3,	"commentblock3",	FALSE },
-	{ SCE_HA_PRAGMA,		"pragma",			FALSE },
-	{ SCE_HA_PREPROCESSOR,	"preprocessor",		FALSE },
-	{ SCE_HA_NUMBER,		"number",			FALSE },
-	{ SCE_HA_KEYWORD,		"keyword",			FALSE },
-	{ SCE_HA_IMPORT,		"import",			FALSE },
-	{ SCE_HA_STRING,		"string",			FALSE },
-	{ SCE_HA_CHARACTER,		"character",		FALSE },
-	{ SCE_HA_CLASS,			"class",			FALSE },
-	{ SCE_HA_OPERATOR,		"operator",			FALSE },
-	{ SCE_HA_IDENTIFIER,	"identifier",		FALSE },
-	{ SCE_HA_INSTANCE,		"instance",			FALSE },
-	{ SCE_HA_CAPITAL,		"capital",			FALSE },
-	{ SCE_HA_MODULE,		"module",			FALSE },
-	{ SCE_HA_DATA,			"data",				FALSE }
-	{ SCE_HA_STRINGEOL,     "stringeol",        FALSE }
+	{ SCE_HA_DEFAULT,			"default",				FALSE },
+	{ SCE_HA_COMMENTLINE,		"commentline",			FALSE },
+	{ SCE_HA_COMMENTBLOCK,		"commentblock",			FALSE },
+	{ SCE_HA_COMMENTBLOCK2,		"commentblock2",		FALSE },
+	{ SCE_HA_COMMENTBLOCK3,		"commentblock3",		FALSE },
+	{ SCE_HA_PRAGMA,			"pragma",				FALSE },
+	{ SCE_HA_PREPROCESSOR,		"preprocessor",			FALSE },
+	{ SCE_HA_NUMBER,			"number",				FALSE },
+	{ SCE_HA_KEYWORD,			"keyword",				FALSE },
+	{ SCE_HA_IMPORT,			"import",				FALSE },
+	{ SCE_HA_STRING,			"string",				FALSE },
+	{ SCE_HA_CHARACTER,			"character",			FALSE },
+	{ SCE_HA_CLASS,				"class",				FALSE },
+	{ SCE_HA_OPERATOR,			"operator",				FALSE },
+	{ SCE_HA_IDENTIFIER,		"identifier",			FALSE },
+	{ SCE_HA_INSTANCE,			"instance",				FALSE },
+	{ SCE_HA_CAPITAL,			"capital",				FALSE },
+	{ SCE_HA_MODULE,			"module",				FALSE },
+	{ SCE_HA_DATA,				"data",					FALSE },
+	{ SCE_HA_STRINGEOL, 		"stringeol",			FALSE },
+	{ SCE_HA_RESERVED_OPERATOR, "reserved_operator",	FALSE }
 };
 static const HLKeyword highlighting_keywords_HASKELL[] =
 {
-	{ 0, "keywords",	FALSE },
-	{ 1, "ffi",			FALSE }
+	{ 0, "keywords",		   FALSE },
+	{ 1, "ffi",				   FALSE },
+	{ 2, "reserved_operators", FALSE }
 };
 static const HLProperty highlighting_properties_HASKELL[] =
 {
-	{ "lexer.haskell.allow.hash",      "1" },
-	{ "lexer.haskell.allow.quotes",    "1" },
-	{ "lexer.haskell.import.safe",     "1" },
-	{ "fold.haskell.imports",          "1" },
-	{ "fold.haskell.imports.indented", "1" }
+	{ "lexer.haskell.allow.hash",      	  "1" },
+	{ "lexer.haskell.allow.quotes",    	  "1" },
+	{ "lexer.haskell.allow.questionmark", "0" },
+	{ "lexer.haskell.import.safe",     	  "1" },
+	{ "fold.haskell.imports",          	  "1" },
+	{ "fold.haskell.imports.indented", 	  "1" }
 };
 
 
