@@ -368,6 +368,8 @@ void SCI_METHOD LexerHaskell::Lex(unsigned int startPos, int length, int initSty
    int nestLevel = state >> 3;
 
    int base = 10;
+   bool dot = false;
+
    bool inDashes = false;
 
    assert(!(IsCommentBlockStyle(initStyle) && nestLevel <= 0));
@@ -467,9 +469,11 @@ void SCI_METHOD LexerHaskell::Lex(unsigned int startPos, int length, int initSty
       }
          // Number
       else if (sc.state == SCE_HA_NUMBER) {
-         if (IsADigit(sc.ch, base) ||
-            (sc.ch=='.' && IsADigit(sc.chNext, base))) {
+         if (IsADigit(sc.ch, base)) {
             sc.Forward();
+         } else if (sc.ch=='.' && dot && IsADigit(sc.chNext, base)) {
+            sc.Forward(2);
+            dot = false;
          } else if ((base == 10) &&
                     (sc.ch == 'e' || sc.ch == 'E') &&
                     (IsADigit(sc.chNext) || sc.chNext == '+' || sc.chNext == '-')) {
@@ -643,13 +647,16 @@ void SCI_METHOD LexerHaskell::Lex(unsigned int startPos, int length, int initSty
                // Match anything starting with "0x" or "0X", too
                sc.Forward(2);
                base = 16;
+               dot = false;
             } else if (sc.ch == '0' && (sc.chNext == 'O' || sc.chNext == 'o')) {
                // Match anything starting with "0o" or "0O", too
                sc.Forward(2);
                base = 8;
+               dot = false;
             } else {
                sc.Forward();
                base = 10;
+               dot = true;
             }
             mode = HA_MODE_DEFAULT;
          }
