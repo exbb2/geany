@@ -274,6 +274,7 @@ protected:	// ScintillaBase subclass needs access to much of Editor
 	bool recordingMacro;
 
 	int foldFlags;
+	int foldAutomatic;
 	ContractionState cs;
 
 	// Hotspot support
@@ -565,14 +566,20 @@ protected:	// ScintillaBase subclass needs access to much of Editor
 	void SetBraceHighlight(Position pos0, Position pos1, int matchStyle);
 
 	void SetAnnotationHeights(int start, int end);
-	void SetDocPointer(Document *document);
+	virtual void SetDocPointer(Document *document);
 
 	void SetAnnotationVisible(int visible);
 
-	void Expand(int &line, bool doExpand);
-	void ToggleContraction(int line);
+	int ExpandLine(int line);
+	void SetFoldExpanded(int lineDoc, bool expanded);
+	void FoldLine(int line, int action);
+	void FoldExpand(int line, int action, int level);
 	int ContractedFoldNext(int lineStart);
 	void EnsureLineVisible(int lineDoc, bool enforcePolicy);
+	void FoldChanged(int line, int levelNow, int levelPrev);
+	void NeedShown(int pos, int len);
+	void FoldAll(int action);
+
 	int GetTag(char *tagValue, int tagNumber);
 	int ReplaceTarget(bool replacePatterns, const char *text, int length=-1);
 

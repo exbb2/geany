@@ -420,7 +420,7 @@ void Document::GetHighlightDelimiters(HighlightDelimiter &highlightDelimiter, in
 	int lookLine = line;
 	int lookLineLevel = level;
 	int lookLineLevelNum = lookLineLevel & SC_FOLDLEVELNUMBERMASK;
-	while ((lookLine > 0) && ((lookLineLevel & SC_FOLDLEVELWHITEFLAG) || 
+	while ((lookLine > 0) && ((lookLineLevel & SC_FOLDLEVELWHITEFLAG) ||
 		((lookLineLevel & SC_FOLDLEVELHEADERFLAG) && (lookLineLevelNum >= (GetLevel(lookLine + 1) & SC_FOLDLEVELNUMBERMASK))))) {
 		lookLineLevel = GetLevel(--lookLine);
 		lookLineLevelNum = lookLineLevel & SC_FOLDLEVELNUMBERMASK;
@@ -453,8 +453,8 @@ void Document::GetHighlightDelimiters(HighlightDelimiter &highlightDelimiter, in
 		}
 	}
 	if (firstChangeableLineBefore == -1) {
-		for (lookLine = line - 1, lookLineLevel = GetLevel(lookLine), lookLineLevelNum = lookLineLevel & SC_FOLDLEVELNUMBERMASK; 
-			lookLine >= beginFoldBlock; 
+		for (lookLine = line - 1, lookLineLevel = GetLevel(lookLine), lookLineLevelNum = lookLineLevel & SC_FOLDLEVELNUMBERMASK;
+			lookLine >= beginFoldBlock;
 			lookLineLevel = GetLevel(--lookLine), lookLineLevelNum = lookLineLevel & SC_FOLDLEVELNUMBERMASK) {
 			if ((lookLineLevel & SC_FOLDLEVELWHITEFLAG) || (lookLineLevelNum > (level & SC_FOLDLEVELNUMBERMASK))) {
 				firstChangeableLineBefore = lookLine;
@@ -466,8 +466,8 @@ void Document::GetHighlightDelimiters(HighlightDelimiter &highlightDelimiter, in
 		firstChangeableLineBefore = beginFoldBlock - 1;
 
 	int firstChangeableLineAfter = -1;
-	for (lookLine = line + 1, lookLineLevel = GetLevel(lookLine), lookLineLevelNum = lookLineLevel & SC_FOLDLEVELNUMBERMASK; 
-		lookLine <= endFoldBlock; 
+	for (lookLine = line + 1, lookLineLevel = GetLevel(lookLine), lookLineLevelNum = lookLineLevel & SC_FOLDLEVELNUMBERMASK;
+		lookLine <= endFoldBlock;
 		lookLineLevel = GetLevel(++lookLine), lookLineLevelNum = lookLineLevel & SC_FOLDLEVELNUMBERMASK) {
 		if ((lookLineLevel & SC_FOLDLEVELHEADERFLAG) && (lookLineLevelNum < (GetLevel(lookLine + 1) & SC_FOLDLEVELNUMBERMASK))) {
 			firstChangeableLineAfter = lookLine;
@@ -715,7 +715,7 @@ bool SCI_METHOD Document::IsDBCSLeadByte(char ch) const {
 			// Shift_jis
 			return ((uch >= 0x81) && (uch <= 0x9F)) ||
 				((uch >= 0xE0) && (uch <= 0xFC));
-				// Lead bytes F0 to FC may be a Microsoft addition. 
+				// Lead bytes F0 to FC may be a Microsoft addition.
 		case 936:
 			// GBK
 			return (uch >= 0x81) && (uch <= 0xFE);
@@ -892,7 +892,7 @@ void * SCI_METHOD Document::ConvertToDocument() {
 int Document::Undo() {
 	int newPos = -1;
 	CheckReadOnly();
-	if (enteredModification == 0) {
+	if ((enteredModification == 0) && (cb.IsCollectingUndo())) {
 		enteredModification++;
 		if (!cb.IsReadOnly()) {
 			bool startSavePoint = cb.IsSavePoint();
@@ -977,7 +977,7 @@ int Document::Undo() {
 int Document::Redo() {
 	int newPos = -1;
 	CheckReadOnly();
-	if (enteredModification == 0) {
+	if ((enteredModification == 0) && (cb.IsCollectingUndo())) {
 		enteredModification++;
 		if (!cb.IsReadOnly()) {
 			bool startSavePoint = cb.IsSavePoint();
@@ -1048,11 +1048,6 @@ bool Document::InsertChar(int pos, char ch) {
  */
 bool Document::InsertCString(int position, const char *s) {
 	return InsertString(position, s, static_cast<int>(s ? strlen(s) : 0));
-}
-
-void Document::ChangeChar(int pos, char ch) {
-	DeleteChars(pos, 1);
-	InsertChar(pos, ch);
 }
 
 void Document::DelChar(int pos) {
@@ -1667,25 +1662,6 @@ int Document::LinesTotal() const {
 	return cb.Lines();
 }
 
-void Document::ChangeCase(Range r, bool makeUpperCase) {
-	for (int pos = r.start; pos < r.end;) {
-		int len = LenChar(pos);
-		if (len == 1) {
-			char ch = CharAt(pos);
-			if (makeUpperCase) {
-				if (IsLowerCase(ch)) {
-					ChangeChar(pos, static_cast<char>(MakeUpperCase(ch)));
-				}
-			} else {
-				if (IsUpperCase(ch)) {
-					ChangeChar(pos, static_cast<char>(MakeLowerCase(ch)));
-				}
-			}
-		}
-		pos += len;
-	}
-}
-
 void Document::SetDefaultCharClasses(bool includeWordClass) {
     charClass.SetDefaultCharClasses(includeWordClass);
 }
@@ -1821,20 +1797,12 @@ void Document::MarginSetStyles(int line, const unsigned char *styles) {
 	NotifyModified(DocModification(SC_MOD_CHANGEMARGIN, LineStart(line), 0, 0, 0, line));
 }
 
-int Document::MarginLength(int line) const {
-	return static_cast<LineAnnotation *>(perLineData[ldMargin])->Length(line);
-}
-
 void Document::MarginClearAll() {
 	int maxEditorLine = LinesTotal();
 	for (int l=0; l<maxEditorLine; l++)
 		MarginSetText(l, 0);
 	// Free remaining data
 	static_cast<LineAnnotation *>(perLineData[ldMargin])->ClearAll();
-}
-
-bool Document::AnnotationAny() const {
-	return static_cast<LineAnnotation *>(perLineData[ldAnnotation])->AnySet();
 }
 
 StyledText Document::AnnotationStyledText(int line) {
@@ -1864,10 +1832,6 @@ void Document::AnnotationSetStyles(int line, const unsigned char *styles) {
 	if (line >= 0 && line < LinesTotal()) {
 		static_cast<LineAnnotation *>(perLineData[ldAnnotation])->SetStyles(line, styles);
 	}
-}
-
-int Document::AnnotationLength(int line) const {
-	return static_cast<LineAnnotation *>(perLineData[ldAnnotation])->Length(line);
 }
 
 int Document::AnnotationLines(int line) const {
@@ -2236,6 +2200,8 @@ long BuiltinRegex::FindText(Document *doc, int minPos, int maxPos, const char *s
 		int success = search.Execute(di, startOfLine, endOfLine);
 		if (success) {
 			pos = search.bopat[0];
+			// Ensure only whole characters selected
+			search.eopat[0] = doc->MovePositionOutsideChar(search.eopat[0], 1, false);
 			lenRet = search.eopat[0] - search.bopat[0];
 			// There can be only one start of a line, so no need to look for last match in line
 			if ((increment == -1) && (s[0] != '^')) {
