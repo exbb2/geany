@@ -145,10 +145,6 @@ inline int StyleFromNestLevel(const unsigned int nestLevel) {
       return SCE_HA_COMMENTBLOCK + (nestLevel % 3);
    }
 
-inline bool OnLineEnd (const StyleContext &sc) {
-   return (sc.atLineEnd || sc.ch == '\n' || (sc.ch == '\r' && sc.chNext != '\n'));
-}
-
 struct OptionsHaskell {
    bool magicHash;
    bool allowQuotes;
@@ -442,7 +438,7 @@ void SCI_METHOD LexerHaskell::Lex(unsigned int startPos, int length, int initSty
       }
          // String
       else if (sc.state == SCE_HA_STRING) {
-         if (OnLineEnd(sc)) {
+         if (sc.atLineEnd) {
             sc.ChangeState(SCE_HA_STRINGEOL);
             sc.ForwardSetState(SCE_HA_DEFAULT);
          } else if (sc.ch == '\"') {
@@ -457,7 +453,7 @@ void SCI_METHOD LexerHaskell::Lex(unsigned int startPos, int length, int initSty
       }
          // Char
       else if (sc.state == SCE_HA_CHARACTER) {
-         if (OnLineEnd(sc)) {
+         if (sc.atLineEnd) {
             sc.ChangeState(SCE_HA_STRINGEOL);
             sc.ForwardSetState(SCE_HA_DEFAULT);
          } else if (sc.ch == '\'') {
@@ -583,7 +579,7 @@ void SCI_METHOD LexerHaskell::Lex(unsigned int startPos, int length, int initSty
          // Comments
             // Oneliner
       else if (sc.state == SCE_HA_COMMENTLINE) {
-         if (OnLineEnd(sc)) {
+         if (sc.atLineEnd) {
             sc.SetState(mode == HA_MODE_PRAGMA ? SCE_HA_PRAGMA : SCE_HA_DEFAULT);
             sc.Forward(); // prevent double counting a line
          } else if (inDashes && sc.ch != '-' && mode != HA_MODE_PRAGMA) {
@@ -632,7 +628,7 @@ void SCI_METHOD LexerHaskell::Lex(unsigned int startPos, int length, int initSty
       }
             // Preprocessor
       else if (sc.state == SCE_HA_PREPROCESSOR) {
-         if (OnLineEnd(sc)) {
+         if (sc.atLineEnd) {
             sc.SetState(SCE_HA_DEFAULT);
             sc.Forward(); // prevent double counting a line
          } else if (options.stylingWithinPreprocessor && !IsHaskellLetter(sc.ch)) {
