@@ -133,6 +133,10 @@ static inline bool IsAHaskellWordChar(const int ch) {
           || ch == '\'');
 }
 
+static inline bool IsCommentStyle(int style) {
+   return (style >= SCE_HA_COMMENTLINE && style <= SCE_HA_COMMENTBLOCK3);
+}
+
 static inline bool IsCommentBlockStyle(int style) {
    return (style >= SCE_HA_COMMENTBLOCK && style <= SCE_HA_COMMENTBLOCK3);
 }
@@ -759,18 +763,22 @@ void SCI_METHOD LexerHaskell::Lex(unsigned int startPos, int length, int initSty
 // Modified to treat comment blocks as whitespace
 // plus special case for commentline/preprocessor.
 static int HaskellIndentAmount(Accessor &styler, int line) {
-   int end = styler.Length();
 
    // Determines the indentation level of the current line
    // Comment blocks are treated as whitespace
 
    int pos = styler.LineStart(line);
+   int eol_pos = styler.LineStart(line + 1) - 1;
+
    char ch = styler[pos];
    int style = styler.StyleAt(pos);
+
    int indent = 0;
    bool inPrevPrefix = line > 0;
+
    int posPrev = inPrevPrefix ? styler.LineStart(line-1) : 0;
-   while ((ch == ' ' || ch == '\t' || IsCommentBlockStyle(style)) && (pos < end)) {
+
+   while ((ch == ' ' || ch == '\t' || IsCommentBlockStyle(style)) && (pos < eol_pos)) {
       if (inPrevPrefix) {
          char chPrev = styler[posPrev++];
          if (chPrev != ' ' && chPrev != '\t') {
@@ -790,13 +798,12 @@ static int HaskellIndentAmount(Accessor &styler, int line) {
    indent += SC_FOLDLEVELBASE;
    // if completely empty line or the start of a comment or preprocessor...
    if (  styler.LineStart(line) == styler.Length()
-      || (  ch == ' '
-         || ch == '\t'
-         || ch == '\n'
-         || ch == '\r'
-         || style == SCE_HA_COMMENTLINE
-         || style == SCE_HA_PREPROCESSOR
-         ))
+      || ch == ' '
+      || ch == '\t'
+      || ch == '\n'
+      || ch == '\r'
+      || IsCommentStyle(style)
+      || style == SCE_HA_PREPROCESSOR)
       return indent | SC_FOLDLEVELWHITEFLAG;
    else
       return indent;
