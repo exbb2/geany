@@ -137,10 +137,6 @@ static inline bool IsCommentBlockStyle(int style) {
    return (style >= SCE_HA_COMMENTBLOCK && style <= SCE_HA_COMMENTBLOCK3);
 }
 
-static inline bool IsCommentStyle(int style) {
-   return (style >= SCE_HA_COMMENTLINE && style <= SCE_HA_COMMENTBLOCK3);
-}
-
 inline int StyleFromNestLevel(const unsigned int nestLevel) {
       return SCE_HA_COMMENTBLOCK + (nestLevel % 3);
    }
@@ -759,25 +755,65 @@ void SCI_METHOD LexerHaskell::Lex(unsigned int startPos, int length, int initSty
    sc.Complete();
 }
 
-static bool LineStartsWithACommentOrPreprocessor(int line, Accessor &styler) {
+// Mangled version of lexlib/Accessor.cxx IndentAmount.
+// Modified to treat comment blocks as whitespace
+// plus special case for commentline/preprocessor.
+static int HaskellIndentAmount(Accessor &styler, int line) {
+   int end = styler.Length();
+
+   // Determines the indentation level of the current line
+   // Comment blocks are treated as whitespace
+
    int pos = styler.LineStart(line);
-   int eol_pos = styler.LineStart(line + 1) - 1;
-
-   for (int i = pos; i < eol_pos; i++) {
-      int style = styler.StyleAt(i);
-
-      if (IsCommentStyle(style) || style == SCE_HA_PREPROCESSOR) {
-         return true;
+   char ch = styler[pos];
+   int style = styler.StyleAt(pos);
+   int indent = 0;
+   bool inPrevPrefix = line > 0;
+   int posPrev = inPrevPrefix ? styler.LineStart(line-1) : 0;
+   while ((ch == ' ' || ch == '\t' || IsCommentBlockStyle(style)) && (pos < end)) {
+      if (inPrevPrefix) {
+         char chPrev = styler[posPrev++];
+         if (chPrev != ' ' && chPrev != '\t') {
+            inPrevPrefix = false;
+         }
       }
-
-      int ch = styler[i];
-
-      if (  ch != ' '
-         && ch != '\t') {
-         return false;
+      if (ch == '\t') {
+         indent = (indent / 8 + 1) * 8;
+      } else { // Space or comment block
+         indent++;
       }
+      pos++;
+      ch = styler[pos];
+      style = styler.StyleAt(pos);
    }
-   return true;
+
+   indent += SC_FOLDLEVELBASE;
+   // if completely empty line or the start of a comment or preprocessor...
+   if (  styler.LineStart(line) == styler.Length()
+      || (  ch == ' '
+         || ch == '\t'
+         || ch == '\n'
+         || ch == '\r'
+         || style == SCE_HA_COMMENTLINE
+         || style == SCE_HA_PREPROCESSOR
+         ))
+      return indent | SC_FOLDLEVELWHITEFLAG;
+   else
+      return indent;
+}
+
+static inline int IndentAmountWithOffset(Accessor &styler, int line) {
+   int indent = HaskellIndentAmount(styler, line);
+   int indentLevel = indent & SC_FOLDLEVELNUMBERMASK;
+   return indentLevel == (SC_FOLDLEVELBASE & SC_FOLDLEVELNUMBERMASK)
+            ? indent
+            : (indentLevel + INDENT_OFFSET) | (indent & ~SC_FOLDLEVELNUMBERMASK);
+}
+
+static inline int RemoveIndentOffset(int indentLevel) {
+   return indentLevel == (SC_FOLDLEVELBASE & SC_FOLDLEVELNUMBERMASK)
+         ? indentLevel
+         : indentLevel - INDENT_OFFSET;
 }
 
 void SCI_METHOD LexerHaskell::Fold(unsigned int startPos, int length, int // initStyle
@@ -798,26 +834,19 @@ void SCI_METHOD LexerHaskell::Fold(unsigned int startPos, int length, int // ini
    // for any white space lines
    // and so we can fix any preceding fold level (which is why we go back
    // at least one line in all cases)
-   int spaceFlags = 0;
    int lineCurrent = styler.GetLine(startPos);
    bool importHere = LineContainsImport(lineCurrent, styler);
-   int indentCurrent = styler.IndentAmount(lineCurrent, &spaceFlags, NULL);
+   int indentCurrent = IndentAmountWithOffset(styler, lineCurrent);
 
    while (lineCurrent > 0) {
       lineCurrent--;
       importHere = LineContainsImport(lineCurrent, styler);
-      indentCurrent = styler.IndentAmount(lineCurrent, &spaceFlags, NULL);
-      if (!(indentCurrent & SC_FOLDLEVELWHITEFLAG) &&
-               !LineStartsWithACommentOrPreprocessor(lineCurrent, styler))
+      indentCurrent = IndentAmountWithOffset(styler, lineCurrent);
+      if (!(indentCurrent & SC_FOLDLEVELWHITEFLAG))
          break;
    }
 
    int indentCurrentLevel = indentCurrent & SC_FOLDLEVELNUMBERMASK;
-   int indentCurrentMask = indentCurrent & ~SC_FOLDLEVELNUMBERMASK;
-
-   if (indentCurrentLevel != (SC_FOLDLEVELBASE & SC_FOLDLEVELNUMBERMASK)) {
-      indentCurrent = (indentCurrentLevel + INDENT_OFFSET) | indentCurrentMask;
-   }
 
    if (lineCurrent <= firstImportLine) {
       firstImportLine = -1; // readjust first import position
@@ -827,11 +856,13 @@ void SCI_METHOD LexerHaskell::Fold(unsigned int startPos, int length, int // ini
       if (firstImportLine == -1) {
          firstImportLine = lineCurrent;
       }
+      indentCurrentLevel = RemoveIndentOffset(indentCurrentLevel);
       if (firstImportLine != lineCurrent) {
          indentCurrentLevel++;
       }
-      indentCurrent = indentCurrentLevel | indentCurrentMask;
    }
+
+   indentCurrent = indentCurrentLevel | (indentCurrent & ~SC_FOLDLEVELNUMBERMASK);
 
    // Process all characters to end of requested range
    //that hangs over the end of the range.  Cap processing in all cases
@@ -840,12 +871,13 @@ void SCI_METHOD LexerHaskell::Fold(unsigned int startPos, int length, int // ini
 
       // Gather info
       int lineNext = lineCurrent + 1;
-      importHere = LineContainsImport(lineNext, styler);
+      importHere = false;
       int indentNext = indentCurrent;
 
       if (lineNext <= docLines) {
          // Information about next line is only available if not at end of document
-         indentNext = styler.IndentAmount(lineNext, &spaceFlags, NULL);
+         importHere = LineContainsImport(lineNext, styler);
+         indentNext = IndentAmountWithOffset(styler, lineNext);
       }
       if (indentNext & SC_FOLDLEVELWHITEFLAG)
          indentNext = SC_FOLDLEVELWHITEFLAG | indentCurrentLevel;
@@ -855,30 +887,25 @@ void SCI_METHOD LexerHaskell::Fold(unsigned int startPos, int length, int // ini
       // which effectively folds them into surrounding code rather
       // than screwing up folding.
 
-      while ((lineNext < docLines) &&
-            ((indentNext & SC_FOLDLEVELWHITEFLAG) ||
-             (lineNext <= docLines && LineStartsWithACommentOrPreprocessor(lineNext, styler)))) {
+      while (lineNext < docLines && (indentNext & SC_FOLDLEVELWHITEFLAG)) {
          lineNext++;
          importHere = LineContainsImport(lineNext, styler);
-         indentNext = styler.IndentAmount(lineNext, &spaceFlags, NULL);
+         indentNext = IndentAmountWithOffset(styler, lineNext);
       }
 
       int indentNextLevel = indentNext & SC_FOLDLEVELNUMBERMASK;
-      int indentNextMask = indentNext & ~SC_FOLDLEVELNUMBERMASK;
-
-      if (indentNextLevel != (SC_FOLDLEVELBASE & SC_FOLDLEVELNUMBERMASK)) {
-         indentNext = (indentNextLevel + INDENT_OFFSET) | indentNextMask;
-      }
 
       if (importHere) {
          if (firstImportLine == -1) {
             firstImportLine = lineNext;
          }
+         indentNextLevel = RemoveIndentOffset(indentNextLevel);
          if (firstImportLine != lineNext) {
             indentNextLevel++;
          }
-         indentNext = indentNextLevel | indentNextMask;
       }
+
+      indentNext = indentNextLevel | (indentNext & ~SC_FOLDLEVELNUMBERMASK);
 
       const int levelBeforeComments = Maximum(indentCurrentLevel,indentNextLevel);
 
@@ -891,7 +918,7 @@ void SCI_METHOD LexerHaskell::Fold(unsigned int startPos, int length, int // ini
       int skipLevel = indentNextLevel;
 
       while (--skipLine > lineCurrent) {
-         int skipLineIndent = styler.IndentAmount(skipLine, &spaceFlags, NULL);
+         int skipLineIndent = IndentAmountWithOffset(styler, skipLine);
 
          if (options.foldCompact) {
             if ((skipLineIndent & SC_FOLDLEVELNUMBERMASK) > indentNextLevel) {
@@ -903,8 +930,7 @@ void SCI_METHOD LexerHaskell::Fold(unsigned int startPos, int length, int // ini
             styler.SetLevel(skipLine, skipLevel | whiteFlag);
          } else {
             if (  (skipLineIndent & SC_FOLDLEVELNUMBERMASK) > indentNextLevel
-               && !(skipLineIndent & SC_FOLDLEVELWHITEFLAG)
-               && !LineStartsWithACommentOrPreprocessor(skipLine, styler)) {
+               && !(skipLineIndent & SC_FOLDLEVELWHITEFLAG)) {
                skipLevel = levelBeforeComments;
             }
 
@@ -921,7 +947,9 @@ void SCI_METHOD LexerHaskell::Fold(unsigned int startPos, int length, int // ini
 
       // Set fold level for this line and move to next line
       styler.SetLevel(lineCurrent, options.foldCompact ? lev : lev & ~SC_FOLDLEVELWHITEFLAG);
+
       indentCurrent = indentNext;
+      indentCurrentLevel = indentNextLevel;
       lineCurrent = lineNext;
    }
 
