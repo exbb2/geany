@@ -133,12 +133,12 @@ static inline bool IsAHaskellWordChar(const int ch) {
           || ch == '\'');
 }
 
-static inline bool IsCommentStyle(int style) {
-   return (style >= SCE_HA_COMMENTLINE && style <= SCE_HA_COMMENTBLOCK3);
-}
-
 static inline bool IsCommentBlockStyle(int style) {
    return (style >= SCE_HA_COMMENTBLOCK && style <= SCE_HA_COMMENTBLOCK3);
+}
+
+static inline bool IsCommentStyle(int style) {
+   return (style >= SCE_HA_COMMENTLINE && style <= SCE_HA_COMMENTBLOCK3);
 }
 
 inline int StyleFromNestLevel(const unsigned int nestLevel) {
