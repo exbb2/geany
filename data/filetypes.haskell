@@ -6,6 +6,8 @@ commentline=comment_line
 commentblock=comment
 commentblock2=comment
 commentblock3=comment
+literate_comment=comment
+literate_codedelim=preprocessor
 number=number_1
 keyword=keyword_1
 import=preprocessor
@@ -25,7 +27,7 @@ reserved_operator=keyword
 
 [keywords]
 # all items must be in one line
-keywords=case class data default deriving do else foreign if import in infix infixl infixr instance let module newtype of then type where
+keywords=case class data default deriving do else forall foreign if import in infix infixl infixr instance let module newtype of then type where
 ffi=capi ccall export import interruptible prim safe stdcall unsafe
 reserved_operators=-> .. :: <- = => @ \\ | ~
 
@@ -34,9 +36,9 @@ lexer.haskell.allow.hash=1
 lexer.haskell.allow.quotes=1
 lexer.haskell.allow.questionmark=0
 lexer.haskell.import.safe=1
+lexer.haskell.cpp=1
 styling.within.preprocessor=1
-fold.haskell.imports=1
-fold.haskell.imports.indented=1
+fold.haskell.imports=0
 
 [settings]
 # default extension used when saving files

@@ -614,7 +614,9 @@ static const HLStyle highlighting_styles_HASKELL[] =
 	{ SCE_HA_MODULE,			"module",				FALSE },
 	{ SCE_HA_DATA,				"data",					FALSE },
 	{ SCE_HA_STRINGEOL, 		"stringeol",			FALSE },
-	{ SCE_HA_RESERVED_OPERATOR, "reserved_operator",	FALSE }
+	{ SCE_HA_RESERVED_OPERATOR, "reserved_operator",	FALSE },
+	{ SCE_HA_LITERATE_COMMENT,	"literate_comment",		FALSE },
+	{ SCE_HA_LITERATE_CODEDELIM,"literate_codedelim",	FALSE }
 };
 static const HLKeyword highlighting_keywords_HASKELL[] =
 {
@@ -622,15 +624,13 @@ static const HLKeyword highlighting_keywords_HASKELL[] =
 	{ 1, "ffi",				   FALSE },
 	{ 2, "reserved_operators", FALSE }
 };
-static const HLProperty highlighting_properties_HASKELL[] =
-{
-	{ "lexer.haskell.allow.hash",      	  "1" },
-	{ "lexer.haskell.allow.quotes",    	  "1" },
-	{ "lexer.haskell.allow.questionmark", "0" },
-	{ "lexer.haskell.import.safe",     	  "1" },
-	{ "fold.haskell.imports",          	  "1" },
-	{ "fold.haskell.imports.indented", 	  "1" }
-};
+#define highlighting_properties_HASKELL		EMPTY_PROPERTIES
+
+/* Literate Haskell */
+#define highlighting_lexer_LITERATEHASKELL			SCLEX_LITERATEHASKELL
+#define highlighting_styles_LITERATEHASKELL			highlighting_styles_HASKELL
+#define highlighting_keywords_LITERATEHASKELL		highlighting_keywords_HASKELL
+#define highlighting_properties_LITERATEHASKELL		highlighting_properties_HASKELL
 
 
 /* HAXE */
