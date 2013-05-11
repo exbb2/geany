@@ -156,6 +156,7 @@ struct OptionsHaskell {
    bool foldComment;
    bool foldCompact;
    bool foldImports;
+   bool foldIndentedImports;
    OptionsHaskell() {
       magicHash = true;       // Widespread use, enabled by default.
       allowQuotes = true;     // Widespread use, enabled by default.
@@ -167,6 +168,7 @@ struct OptionsHaskell {
       foldComment = false;
       foldCompact = false;
       foldImports = false;
+      foldIndentedImports = true;
    }
 };
 
@@ -217,12 +219,16 @@ struct OptionSetHaskell : public OptionSet<OptionsHaskell> {
       DefineProperty("fold.haskell.imports", &OptionsHaskell::foldImports,
          "Set to 1 to enable folding of import declarations");
 
+      DefineProperty("fold.haskell.imports.indented", &OptionsHaskell::foldIndentedImports,
+         "Set this property to 0 to disable folding imports not starting at "
+         "column 0 when fold.haskell.imports=1");
+
       DefineWordListSets(haskellWordListDesc);
    }
 };
 
 class LexerHaskell : public ILexer {
-   const bool literate;
+   bool literate;
    int firstImportLine;
    WordList keywords;
    WordList ffi;
@@ -285,7 +291,7 @@ class LexerHaskell : public ILexer {
       }
    };
 
-   inline void skipMagicHash(StyleContext &sc, const HashCount hashes) {
+   inline void skipMagicHash(StyleContext &sc, const HashCount hashes) const {
       if (options.magicHash && sc.ch == '#') {
          sc.Forward();
          if (hashes == twoHashes && sc.ch == '#') {
@@ -298,22 +304,24 @@ class LexerHaskell : public ILexer {
       }
    }
 
-   bool LineContainsImport(const int line, Accessor &styler) {
+   bool LineContainsImport(const int line, Accessor &styler) const {
       if (options.foldImports) {
          int currentPos = styler.LineStart(line);
          int style = styler.StyleAt(currentPos);
 
-         int eol_pos = styler.LineStart(line + 1) - 1;
+         if (options.foldIndentedImports) {
+            int eol_pos = styler.LineStart(line + 1) - 1;
 
-         while (currentPos < eol_pos) {
-            int ch = styler[currentPos];
-            style = styler.StyleAt(currentPos);
+            while (currentPos < eol_pos) {
+               int ch = styler[currentPos];
+               style = styler.StyleAt(currentPos);
 
-            if (ch == ' ' || ch == '\t'
-             || IsCommentBlockStyle(style)) {
-               currentPos++;
-            } else {
-               break;
+               if (ch == ' ' || ch == '\t'
+                || IsCommentBlockStyle(style)) {
+                  currentPos++;
+               } else {
+                  break;
+               }
             }
          }
 
@@ -495,7 +503,7 @@ void SCI_METHOD LexerHaskell::Lex(unsigned int startPos, int length, int initSty
             sc.Forward();
 
          if (sc.Match("\\begin{code}")) {
-            sc.Forward(strlen("\\begin{code}"));
+            sc.Forward(static_cast<int>(strlen("\\begin{code}")));
 
             bool correct = true;
 
@@ -516,7 +524,7 @@ void SCI_METHOD LexerHaskell::Lex(unsigned int startPos, int length, int initSty
             && sc.Match("\\end{code}")) {
          sc.SetState(SCE_HA_LITERATE_CODEDELIM);
 
-         sc.Forward(strlen("\\end{code}"));
+         sc.Forward(static_cast<int>(strlen("\\end{code}")));
 
          while (!sc.atLineEnd && sc.More()) {
             sc.Forward();
