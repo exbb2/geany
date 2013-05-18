@@ -31,6 +31,7 @@
 #include "ILexer.h"
 #include "Scintilla.h"
 #include "SciLexer.h"
+#include "Platform.h"
 
 #include "PropSetSimple.h"
 #include "WordList.h"
@@ -52,7 +53,50 @@ static int u_IsHaskellSymbol(int);
 
 #define HASKELL_UNICODE
 
-#ifndef HASKELL_UNICODE
+#ifdef HASKELL_UNICODE
+
+static int u_iswupper (int c) {
+   return Platform::CharGeneralCategory(c)
+      & (  Letter_Uppercase
+         | Letter_Titlecase);
+}
+
+static int u_iswalpha (int c) {
+   return Platform::CharGeneralCategory(c)
+      & (  Letter_Lowercase
+         | Letter_Uppercase
+         | Letter_Titlecase
+         | Letter_Modifier
+         | Letter_Other);
+}
+
+static int u_iswalnum (int c) {
+   return Platform::CharGeneralCategory(c)
+      & (  Letter_Lowercase
+         | Letter_Uppercase
+         | Letter_Titlecase
+         | Letter_Modifier
+         | Letter_Other
+         | Mark_SpacingCombining
+         | Mark_Enclosing
+         | Mark_NonSpacing
+         | Number_Other
+         | Number_Decimal
+         | Number_Letter);
+}
+
+static int u_IsHaskellSymbol(int c) {
+   return Platform::CharGeneralCategory(c)
+      & (  Punctuation_Connector
+         | Punctuation_Dash
+         | Punctuation_Other
+         | Symbol_Math
+         | Symbol_Currency
+         | Symbol_Modifier
+         | Symbol_Other);
+}
+
+#else
 
 // Stubs
 
@@ -1121,7 +1165,8 @@ void SCI_METHOD LexerHaskell::Fold(unsigned int startPos, int length, int // ini
 LexerModule lmHaskell(SCLEX_HASKELL, LexerHaskell::LexerFactoryHaskell, "haskell", haskellWordListDesc);
 LexerModule lmLiterateHaskell(SCLEX_LITERATEHASKELL, LexerHaskell::LexerFactoryLiterateHaskell, "literatehaskell", haskellWordListDesc);
 
-#ifdef HASKELL_UNICODE
+// #ifdef HASKELL_UNICODE
+#if 0
 
 // Unicode tables copied from https://github.com/ghc/packages-base/blob/master/cbits/WCsubst.c
 

@@ -2103,6 +2103,42 @@ int Platform::DBCSCharMaxLength() {
 	//return 2;
 }
 
+GeneralCategory Platform::CharGeneralCategory(const int c) {
+	switch (g_unichar_type(static_cast<gunichar>(c))) {
+		case G_UNICODE_CONTROL: return Other_Control;
+		case G_UNICODE_FORMAT: return Other_Format;
+		case G_UNICODE_UNASSIGNED: return Other_NotAssigned;
+		case G_UNICODE_PRIVATE_USE: return Other_PrivateUse;
+		case G_UNICODE_SURROGATE: return Other_Surrogate;
+		case G_UNICODE_LOWERCASE_LETTER: return Letter_Lowercase;
+		case G_UNICODE_MODIFIER_LETTER: return Letter_Modifier;
+		case G_UNICODE_OTHER_LETTER: return Letter_Other;
+		case G_UNICODE_TITLECASE_LETTER: return Letter_Titlecase;
+		case G_UNICODE_UPPERCASE_LETTER: return Letter_Uppercase;
+		case G_UNICODE_SPACING_MARK: return Mark_SpacingCombining;
+		case G_UNICODE_ENCLOSING_MARK: return Mark_Enclosing;
+		case G_UNICODE_NON_SPACING_MARK: return Mark_NonSpacing;
+		case G_UNICODE_DECIMAL_NUMBER: return Number_Decimal;
+		case G_UNICODE_LETTER_NUMBER: return Number_Letter;
+		case G_UNICODE_OTHER_NUMBER: return Number_Other;
+		case G_UNICODE_CONNECT_PUNCTUATION: return Punctuation_Connector;
+		case G_UNICODE_DASH_PUNCTUATION: return Punctuation_Dash;
+		case G_UNICODE_CLOSE_PUNCTUATION: return Punctuation_Close;
+		case G_UNICODE_FINAL_PUNCTUATION: return Punctuation_FinalQuote;
+		case G_UNICODE_INITIAL_PUNCTUATION: return Punctuation_InitialQuote;
+		case G_UNICODE_OTHER_PUNCTUATION: return Punctuation_Other;
+		case G_UNICODE_OPEN_PUNCTUATION: return Punctuation_Open;
+		case G_UNICODE_CURRENCY_SYMBOL: return Symbol_Currency;
+		case G_UNICODE_MODIFIER_SYMBOL: return Symbol_Modifier;
+		case G_UNICODE_MATH_SYMBOL: return Symbol_Math;
+		case G_UNICODE_OTHER_SYMBOL: return Symbol_Other;
+		case G_UNICODE_LINE_SEPARATOR: return Separator_Line;
+		case G_UNICODE_PARAGRAPH_SEPARATOR: return Separator_Paragraph;
+		case G_UNICODE_SPACE_SEPARATOR: return Separator_Space;
+		default: return static_cast<GeneralCategory>(0);
+	}
+}
+
 // These are utility functions not really tied to a platform
 
 int Platform::Minimum(int a, int b) {

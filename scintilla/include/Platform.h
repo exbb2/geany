@@ -454,6 +454,39 @@ public:
 	static DynamicLibrary *Load(const char *modulePath);
 };
 
+enum GeneralCategory {
+	Letter_Uppercase         = 1 << 0,  // Lu: Letter, Uppercase
+	Letter_Lowercase         = 1 << 1,  // Ll: Letter, Lowercase
+	Letter_Titlecase         = 1 << 2,  // Lt: Letter, Titlecase
+	Letter_Modifier          = 1 << 3,  // Lm: Letter, Modifier
+	Letter_Other             = 1 << 4,  // Lo: Letter, Other
+	Mark_NonSpacing          = 1 << 5,  // Mn: Mark, Non-Spacing
+	Mark_SpacingCombining    = 1 << 6,  // Mc: Mark, Spacing Combining
+	Mark_Enclosing           = 1 << 7,  // Me: Mark, Enclosing
+	Number_Decimal           = 1 << 8,  // Nd: Number, Decimal
+	Number_Letter            = 1 << 9,  // Nl: Number, Letter
+	Number_Other             = 1 << 10, // No: Number, Other
+	Punctuation_Connector    = 1 << 11, // Pc: Punctuation, Connector
+	Punctuation_Dash         = 1 << 12, // Pd: Punctuation, Dash
+	Punctuation_Open         = 1 << 13, // Ps: Punctuation, Open
+	Punctuation_Close        = 1 << 14, // Pe: Punctuation, Close
+	Punctuation_InitialQuote = 1 << 15, // Pi: Punctuation, Initial quote
+	Punctuation_FinalQuote   = 1 << 16, // Pf: Punctuation, Final quote
+	Punctuation_Other        = 1 << 17, // Po: Punctuation, Other
+	Symbol_Math              = 1 << 18, // Sm: Symbol, Math
+	Symbol_Currency          = 1 << 19, // Sc: Symbol, Currency
+	Symbol_Modifier          = 1 << 20, // Sk: Symbol, Modifier
+	Symbol_Other             = 1 << 21, // So: Symbol, Other
+	Separator_Space          = 1 << 22, // Zs: Separator, Space
+	Separator_Line           = 1 << 23, // Zl: Separator, Line
+	Separator_Paragraph      = 1 << 24, // Zp: Separator, Paragraph
+	Other_Control            = 1 << 25, // Cc: Other, Control
+	Other_Format             = 1 << 26, // Cf: Other, Format
+	Other_Surrogate          = 1 << 27, // Cs: Other, Surrogate
+	Other_PrivateUse         = 1 << 28, // Co: Other, Private Use
+	Other_NotAssigned        = 1 << 29  // Cn: Other, Not Assigned
+};
+
 /**
  * Platform class used to retrieve system wide parameters such as double click speed
  * and chrome colour. Not a creatable object, more of a module with several functions.
@@ -482,6 +515,7 @@ public:
 	static bool IsDBCSLeadByte(int codePage, char ch);
 	static int DBCSCharLength(int codePage, const char *s);
 	static int DBCSCharMaxLength();
+	static GeneralCategory CharGeneralCategory(const int c);
 
 	// These are utility functions not really tied to a platform
 	static int Minimum(int a, int b);
