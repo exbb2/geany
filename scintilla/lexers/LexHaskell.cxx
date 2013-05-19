@@ -207,7 +207,6 @@ struct OptionsHaskell {
    bool foldComment;
    bool foldCompact;
    bool foldImports;
-   bool foldIndentedImports;
    OptionsHaskell() {
       magicHash = true;       // Widespread use, enabled by default.
       allowQuotes = true;     // Widespread use, enabled by default.
@@ -219,7 +218,6 @@ struct OptionsHaskell {
       foldComment = false;
       foldCompact = false;
       foldImports = false;
-      foldIndentedImports = true;
    }
 };
 
@@ -269,10 +267,6 @@ struct OptionSetHaskell : public OptionSet<OptionsHaskell> {
 
       DefineProperty("fold.haskell.imports", &OptionsHaskell::foldImports,
          "Set to 1 to enable folding of import declarations");
-
-      DefineProperty("fold.haskell.imports.indented", &OptionsHaskell::foldIndentedImports,
-         "Set this property to 0 to disable folding imports not starting at "
-         "column 0 when fold.haskell.imports=1");
 
       DefineWordListSets(haskellWordListDesc);
    }
@@ -361,20 +355,18 @@ class LexerHaskell : public ILexer {
          int currentPos = styler.LineStart(line);
          int style = styler.StyleAt(currentPos);
 
-         if (options.foldIndentedImports) {
-            int eol_pos = styler.LineStart(line + 1) - 1;
+         int eol_pos = styler.LineStart(line + 1) - 1;
 
-            while (currentPos < eol_pos) {
-               int ch = styler[currentPos];
-               style = styler.StyleAt(currentPos);
+         while (currentPos < eol_pos) {
+            int ch = styler[currentPos];
+            style = styler.StyleAt(currentPos);
 
-               if (ch == ' ' || ch == '\t'
-                || IsCommentBlockStyle(style)
-                || style == SCE_HA_LITERATE_CODEDELIM) {
-                  currentPos++;
-               } else {
-                  break;
-               }
+            if (ch == ' ' || ch == '\t'
+             || IsCommentBlockStyle(style)
+             || style == SCE_HA_LITERATE_CODEDELIM) {
+               currentPos++;
+            } else {
+               break;
             }
          }
 
