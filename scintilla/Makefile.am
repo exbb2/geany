@@ -50,6 +50,8 @@ gtk/scintilla-marshal.c \
 gtk/scintilla-marshal.h \
 lexlib/Accessor.cxx \
 lexlib/Accessor.h \
+lexlib/CharacterCategory.cxx \
+lexlib/CharacterCategory.h \
 lexlib/CharacterSet.cxx \
 lexlib/CharacterSet.h \
 lexlib/LexAccessor.h \
