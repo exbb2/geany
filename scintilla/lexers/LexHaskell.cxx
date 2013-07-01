@@ -50,7 +50,7 @@ static int u_iswalnum(int);
 static int u_iswupper(int);
 static int u_IsHaskellSymbol(int);
 
-#define HASKELL_UNICODE
+// #define HASKELL_UNICODE
 
 #ifndef HASKELL_UNICODE
 
@@ -597,7 +597,8 @@ void SCI_METHOD LexerHaskell::Lex(unsigned int startPos, int length, int initSty
          hs.lmode = LITERATE_BIRD;
       }
          // Preprocessor
-      else if (sc.atLineStart && sc.ch == '#' && options.cpp) {
+      else if (sc.atLineStart && sc.ch == '#' && options.cpp
+            && (!options.stylingWithinPreprocessor || sc.state == SCE_HA_DEFAULT)) {
          sc.SetState(SCE_HA_PREPROCESSOR);
          sc.Forward();
       }
