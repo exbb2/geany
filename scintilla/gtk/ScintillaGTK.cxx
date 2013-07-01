@@ -118,8 +118,8 @@ class ScintillaGTK : public ScintillaBase {
 	Window scrollbarh;
 	GtkAdjustment *adjustmentv;
 	GtkAdjustment *adjustmenth;
-	int scrollBarWidth;
-	int scrollBarHeight;
+	int verticalScrollBarWidth;
+	int horizontalScrollBarHeight;
 
 	SelectionText primary;
 
@@ -232,8 +232,10 @@ private:
 	gint FocusOutThis(GtkWidget *widget);
 	static gint FocusOut(GtkWidget *widget, GdkEventFocus *event);
 	static void SizeRequest(GtkWidget *widget, GtkRequisition *requisition);
+#if GTK_CHECK_VERSION(3,0,0)
 	static void GetPreferredWidth(GtkWidget *widget, gint *minimalWidth, gint *naturalWidth);
 	static void GetPreferredHeight(GtkWidget *widget, gint *minimalHeight, gint *naturalHeight);
+#endif
 	static void SizeAllocate(GtkWidget *widget, GtkAllocation *allocation);
 #if GTK_CHECK_VERSION(3,0,0)
 	gboolean DrawTextThis(cairo_t *cr);
@@ -354,7 +356,7 @@ static ScintillaGTK *ScintillaFromWidget(GtkWidget *widget) {
 
 ScintillaGTK::ScintillaGTK(_ScintillaObject *sci_) :
 		adjustmentv(0), adjustmenth(0),
-		scrollBarWidth(30), scrollBarHeight(30),
+		verticalScrollBarWidth(30), horizontalScrollBarHeight(30),
 		evbtn(0), capturedMouse(false), dragWasDropped(false),
 		lastKey(0), rectangularSelectionModifier(SCMOD_CTRL), parentClass(0),
 		im_context(NULL),
@@ -678,6 +680,8 @@ void ScintillaGTK::SizeRequest(GtkWidget *widget, GtkRequisition *requisition) {
 #endif
 }
 
+#if GTK_CHECK_VERSION(3,0,0)
+
 void ScintillaGTK::GetPreferredWidth(GtkWidget *widget, gint *minimalWidth, gint *naturalWidth) {
 	GtkRequisition requisition;
 	SizeRequest(widget, &requisition);
@@ -689,6 +693,8 @@ void ScintillaGTK::GetPreferredHeight(GtkWidget *widget, gint *minimalHeight, gi
 	SizeRequest(widget, &requisition);
 	*minimalHeight = *naturalHeight = requisition.height;
 }
+
+#endif
 
 void ScintillaGTK::SizeAllocate(GtkWidget *widget, GtkAllocation *allocation) {
 	ScintillaGTK *sciThis = ScintillaFromWidget(widget);
@@ -1087,9 +1093,9 @@ void ScintillaGTK::FullPaint() {
 PRectangle ScintillaGTK::GetClientRectangle() {
 	PRectangle rc = wMain.GetClientPosition();
 	if (verticalScrollBarVisible)
-		rc.right -= scrollBarWidth;
+		rc.right -= verticalScrollBarWidth;
 	if (horizontalScrollBarVisible && (wrapState == eWrapNone))
-		rc.bottom -= scrollBarHeight;
+		rc.bottom -= horizontalScrollBarHeight;
 	// Move to origin
 	rc.right -= rc.left;
 	rc.bottom -= rc.top;
@@ -1676,44 +1682,41 @@ void ScintillaGTK::Resize(int width, int height) {
 #if GTK_CHECK_VERSION(3,0,0)
 	GtkRequisition requisition;
 	gtk_widget_get_requisition(PWidget(scrollbarv), &requisition);
-	scrollBarWidth = requisition.width;
+	verticalScrollBarWidth = requisition.width;
 	gtk_widget_get_requisition(PWidget(scrollbarh), &requisition);
-	scrollBarHeight = requisition.height;
+	horizontalScrollBarHeight = requisition.height;
 #else
-	scrollBarWidth = GTK_WIDGET(PWidget(scrollbarv))->requisition.width;
-	scrollBarHeight = GTK_WIDGET(PWidget(scrollbarh))->requisition.height;
+	verticalScrollBarWidth = GTK_WIDGET(PWidget(scrollbarv))->requisition.width;
+	horizontalScrollBarHeight = GTK_WIDGET(PWidget(scrollbarh))->requisition.height;
 #endif
 
 	// These allocations should never produce negative sizes as they would wrap around to huge
 	// unsigned numbers inside GTK+ causing warnings.
 	bool showSBHorizontal = horizontalScrollBarVisible && (wrapState == eWrapNone);
-	int horizontalScrollBarHeight = scrollBarHeight;
-	if (!showSBHorizontal)
-		horizontalScrollBarHeight = 0;
 
 	GtkAllocation alloc;
 	if (showSBHorizontal) {
 		gtk_widget_show(GTK_WIDGET(PWidget(scrollbarh)));
 		alloc.x = 0;
-		alloc.y = height - scrollBarHeight;
-		alloc.width = Platform::Maximum(1, width - scrollBarWidth);
+		alloc.y = height - horizontalScrollBarHeight;
+		alloc.width = Platform::Maximum(1, width - verticalScrollBarWidth);
 		alloc.height = horizontalScrollBarHeight;
 		gtk_widget_size_allocate(GTK_WIDGET(PWidget(scrollbarh)), &alloc);
 	} else {
 		gtk_widget_hide(GTK_WIDGET(PWidget(scrollbarh)));
+		horizontalScrollBarHeight = 0; // in case horizontalScrollBarVisible is true.
 	}
 
 	if (verticalScrollBarVisible) {
 		gtk_widget_show(GTK_WIDGET(PWidget(scrollbarv)));
-		alloc.x = width - scrollBarWidth;
+		alloc.x = width - verticalScrollBarWidth;
 		alloc.y = 0;
-		alloc.width = scrollBarWidth;
-		alloc.height = Platform::Maximum(1, height - scrollBarHeight);
-		if (!showSBHorizontal)
-			alloc.height += scrollBarWidth-1;
+		alloc.width = verticalScrollBarWidth;
+		alloc.height = Platform::Maximum(1, height - horizontalScrollBarHeight);
 		gtk_widget_size_allocate(GTK_WIDGET(PWidget(scrollbarv)), &alloc);
 	} else {
 		gtk_widget_hide(GTK_WIDGET(PWidget(scrollbarv)));
+		verticalScrollBarWidth = 0;
 	}
 	if (IS_WIDGET_MAPPED(PWidget(wMain))) {
 		ChangeSize();
@@ -1721,12 +1724,8 @@ void ScintillaGTK::Resize(int width, int height) {
 
 	alloc.x = 0;
 	alloc.y = 0;
-	alloc.width = Platform::Maximum(1, width - scrollBarWidth);
-	alloc.height = Platform::Maximum(1, height - scrollBarHeight);
-	if (!showSBHorizontal)
-		alloc.height += scrollBarHeight;
-	if (!verticalScrollBarVisible)
-		alloc.width += scrollBarWidth;
+	alloc.width = Platform::Maximum(1, width - verticalScrollBarWidth);
+	alloc.height = Platform::Maximum(1, height - horizontalScrollBarHeight);
 	gtk_widget_size_allocate(GTK_WIDGET(PWidget(wText)), &alloc);
 }
 
